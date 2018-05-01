@@ -8,6 +8,6 @@ https://tech-db-forum.bozaro.ru/
 
 Контейнер будет собираться из запускаться командами вида:
 ```
-docker build -t t.garifullin https://github.com/gtt142/Forum-API
+docker build -t t.garifullin https://github.com/gtt142/Forum-API.git
 docker run -p 5000:5000 --name t.garifullin -t t.garifullin
 ```
