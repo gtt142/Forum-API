@@ -25,7 +25,7 @@ public class UserController {
             User userN = null;
             try {
                 userN = this.jdbcTemplate.queryForObject(
-                        "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE nickname ILIKE ?",
+                        "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)",
                         new Object[]{user.getNickname()}, new UserMapper());
             } catch (EmptyResultDataAccessException e) {
                 userN = null;
@@ -36,7 +36,7 @@ public class UserController {
             User userE = null;
             try {
                 userE = this.jdbcTemplate.queryForObject(
-                        "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE email ILIKE ?",
+                        "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(email) = LOWER(?)",
                         new Object[]{user.getEmail()}, new UserMapper());
             } catch (EmptyResultDataAccessException e) {
                 userE = null;
@@ -81,7 +81,7 @@ public class UserController {
         User user = null;
         try {
             user = this.jdbcTemplate.queryForObject(
-                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE nickname ILIKE ?",
+                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)",
                     new Object[]{nickname}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Can't find user with id #42\"}");
@@ -96,7 +96,7 @@ public class UserController {
         User userN = null;
         try {
             userN = this.jdbcTemplate.queryForObject(
-                    "SELECT nickname FROM public.\"users\" WHERE nickname ILIKE ? OR email ILIKE ?",
+                    "SELECT nickname FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?) OR LOWER(email) = LOWER(?)",
                     new Object[]{user.getNickname(), user.getEmail()},
                     (rs, rwNumber) -> new User(rs.getString("nickname")));
         } catch (EmptyResultDataAccessException e) {
@@ -116,11 +116,11 @@ public class UserController {
                         "  email = COALESCE(?, email),\n" +
                         "  fullname = COALESCE(?, fullname),\n" +
                         "  about = COALESCE(?, about)\n" +
-                        "WHERE nickname ILIKE ?;",
+                        "WHERE LOWER(nickname) = LOWER(?);",
                 user.getNickname(), user.getEmail(), user.getFullname(), user.getAbout(), nickname);
         try {
             userRes = this.jdbcTemplate.queryForObject(
-                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE nickname ILIKE ?",
+                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)",
                     new Object[]{nickname}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Can't find user with id #42\"}");

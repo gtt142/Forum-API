@@ -117,7 +117,7 @@ public class ThreadDAO {
         Timestamp time = null;
 
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("SELECT * FROM thread WHERE forum ILIKE ?");
+        queryBuilder.append("SELECT * FROM thread WHERE LOWER(forum) = LOWER(?)");
 
         if(since != null) {
             if (desc) {

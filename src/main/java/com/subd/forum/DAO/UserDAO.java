@@ -20,6 +20,7 @@ public class UserDAO {
         this.jdbcTemplate = jdbcTemplate;
     }
     final String selectUserByNickname = "SELECT * FROM public.users WHERE LOWER(nickname) = LOWER(?)";
+    final String refresh = "REFRESH MATERIALIZED VIEW forum_users";
 
 
     public User getByName(String name) {
@@ -91,6 +92,12 @@ public class UserDAO {
         ArrayList<User> users = new ArrayList<>();
         try {
             List<Map<String, Object>> rows;
+            // TODO денормализовать forum_users
+            try {
+                jdbcTemplate.execute(refresh);
+            } catch (DataAccessException e) {
+                e.printStackTrace();
+            }
             rows = jdbcTemplate.queryForList(sql, slug);
 
             for (Map<String, Object> row : rows) {
