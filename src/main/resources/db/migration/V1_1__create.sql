@@ -48,7 +48,7 @@ CREATE TABLE public.votes (
   vote INTEGER default 1
 );
 
-CREATE VIEW forum_users (forum, nickname)
+CREATE MATERIALIZED VIEW forum_users (forum, nickname)
   AS (
     SELECT t.forum, t.author
     FROM thread t
@@ -56,3 +56,14 @@ CREATE VIEW forum_users (forum, nickname)
     SELECT p.forum, p.author
     FROM post p
   );
+  
+CREATE INDEX users_lower_nickname_idx ON users(LOWER(nickname));
+CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
+CREATE INDEX users_nickname_idx ON users(nickname);
+CREATE INDEX posts_user_id_idx ON post(author);
+CREATE INDEX posts_thread_id_id_idx ON post(thread, post_id);
+CREATE INDEX thread_thread_id ON thread (thread_id);
+CREATE INDEX thread_slug ON thread (LOWER(slug));
+CREATE INDEX users_nickname_lower_idx ON users(LOWER(nickname));
+CREATE INDEX view_forum_nickname_nick ON forum_users(LOWER(nickname));
+CREATE INDEX view_forum_nickname_forum ON forum_users(LOWER(forum));
