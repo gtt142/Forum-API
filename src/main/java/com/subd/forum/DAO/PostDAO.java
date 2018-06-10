@@ -19,6 +19,13 @@ import java.util.Map;
 public class PostDAO {
     private final JdbcTemplate jdbcTemplate;
 
+    final String insertStr = "INSERT INTO post (post_id, description, created, parent, forum, thread, message, author, history)\n" +
+            "VALUES (?, ?, COALESCE(?::TIMESTAMPTZ, CURRENT_TIMESTAMP), ?, ?, ?, ?, ?," +
+            " array_append((SELECT history FROM post WHERE post_id = ?), ?))";
+    final String updateForum = "UPDATE forum SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)";
+    final String nextId = "SELECT nextval('post_post_id_seq')";
+    final String selectPosts = "SELECT * FROM public.post WHERE post_id = ?";
+
     @Autowired
     public PostDAO(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
@@ -27,14 +34,11 @@ public class PostDAO {
     public List<Post> addPosts(List<Post> posts) {
         try(Connection con = jdbcTemplate.getDataSource().getConnection()) {
             con.setAutoCommit(false);
-            String insertStr = "INSERT INTO post (post_id, description, created, parent, forum, thread, message, author, history)\n" +
-                    "VALUES (?, ?, COALESCE(?::TIMESTAMPTZ, CURRENT_TIMESTAMP), ?, ?, ?, ?, ?," +
-                    " array_append((SELECT history FROM post WHERE post_id = ?), ?))";
             PreparedStatement pst = con.prepareStatement(insertStr, Statement.NO_GENERATED_KEYS);
             Integer newId;
 
             for (Post post: posts) {
-                newId = jdbcTemplate.queryForObject("SELECT nextval('post_post_id_seq')", Integer.class);
+                newId = jdbcTemplate.queryForObject(nextId, Integer.class);
                 post.setId(newId);
                 pst.setInt(1, post.getId());
                 pst.setString(2, post.getDescription());
@@ -54,7 +58,6 @@ public class PostDAO {
             pst.close();
 
             if (posts.size() > 0) {
-                String updateForum = "UPDATE forum SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)";
                 pst = con.prepareStatement(updateForum, Statement.NO_GENERATED_KEYS);
                 pst.setInt(1, posts.size());
                 pst.setString(2, posts.get(0).getForum());
@@ -76,7 +79,7 @@ public class PostDAO {
         Post post = null;
         try {
             post = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.post WHERE post_id = ?",
+                    selectPosts,
                     new Object[]{id}, new PostMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;

@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 public class ForumDAO {
     private final JdbcTemplate jdbcTemplate;
 
+    final String selectForumIdBySlug = "SELECT forum_id FROM public.forum WHERE LOWER(slug) = LOWER(?)";
+    final String selectFromForumById = "SELECT * FROM public.forum WHERE forum_id = ?";
+    final String selectFromForumBySlug = "SELECT * FROM public.forum WHERE LOWER(slug) = LOWER(?)";
+
     @Autowired
     public ForumDAO(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
@@ -20,7 +24,7 @@ public class ForumDAO {
     public Boolean isExistBySlug(String slug) {
         try {
              this.jdbcTemplate.queryForObject(
-                    "SELECT forum_id FROM public.forum WHERE slug ILIKE ?",
+                    selectForumIdBySlug,
                     Integer.class, slug);
         } catch (EmptyResultDataAccessException e) {
             return false;
@@ -35,7 +39,7 @@ public class ForumDAO {
         Forum forum = null;
         try {
             forum = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.forum WHERE forum_id = ?",
+                    selectFromForumById,
                     new Object[]{id}, new ForumMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;
@@ -49,7 +53,7 @@ public class ForumDAO {
         Forum forum = null;
         try {
             forum = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.forum WHERE LOWER(slug) = LOWER(?)",
+                    selectFromForumBySlug,
                     new Object[]{slug}, new ForumMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;

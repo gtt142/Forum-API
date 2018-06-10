@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.util.List;
 
 
@@ -26,6 +27,7 @@ public class ThreadController {
     private final ThreadDAO threadDAO;
     private final UserDAO userDAO;
     private final PostDAO postDAO;
+    final Clock clock = Clock.systemDefaultZone();
 
     public ThreadController(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -36,10 +38,11 @@ public class ThreadController {
 
     @PostMapping(value = "/api/forum/{slug}/create", produces = "application/json")
     public ResponseEntity threadCreate(@RequestBody Thread thread, @PathVariable("slug") String slug) {
-        User user = null;
+        User user;
+        final String sql = "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)";
         try {
             user = this.jdbcTemplate.queryForObject(
-                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)",
+                    sql,
                     new Object[]{thread.getAuthor()}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"author doesn't exist\"}");
@@ -47,14 +50,16 @@ public class ThreadController {
             e.printStackTrace();
         }
 
-        Forum forumExist = null;
+        Forum forumExist;
         try {
+            final String sql2 = "SELECT * FROM public.forum WHERE LOWER(slug) = LOWER(?)";
             forumExist = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.forum WHERE slug ILIKE ?",
+                    sql2,
                     new Object[]{slug}, new ForumMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"forum doesn't exist\"}");
         } catch (DataAccessException e) {
+            forumExist = null;
             e.printStackTrace();
         }
 
@@ -62,8 +67,9 @@ public class ThreadController {
 
         Thread threadExist = null;
         try {
+            final String sql3 = "SELECT * FROM public.thread WHERE LOWER(slug) = LOWER(?)";
             threadExist = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.thread WHERE slug ILIKE ?",
+                    sql3,
                     new Object[]{thread.getSlug()}, new ThreadMapper());
         } catch (EmptyResultDataAccessException e) {
             threadExist = null;
@@ -79,7 +85,6 @@ public class ThreadController {
         if(newThread == null){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\": \"can't create\"}");
         }
-
         return ResponseEntity.status(HttpStatus.CREATED).body(newThread);
     }
 
@@ -117,12 +122,10 @@ public class ThreadController {
     @PostMapping(value = "/api/thread/{slug_or_id}/vote", produces = "application/json")
     public ResponseEntity threadUpdate(@RequestBody Vote vote, @PathVariable("slug_or_id") String slugOrId) {
         Thread thread;
-
         if(isNumeric(slugOrId)) {
             thread = threadDAO.getById(Integer.parseInt(slugOrId));
         } else
             thread = threadDAO.getBySlug(slugOrId);
-
         if(thread == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"thread doesn't exist\"}");
         }
@@ -134,7 +137,6 @@ public class ThreadController {
         }
 
         Thread resThread = threadDAO.vote(thread, user.getId(), vote);
-
         return ResponseEntity.status(HttpStatus.OK).body(resThread);
     }
 

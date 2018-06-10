@@ -32,12 +32,16 @@ public class ForumController {
         userDAO = new UserDAO(jdbcTemplate);
     }
 
+    final String selectUsersByNickname = "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)";
+    final String selectFromForumBySlug = "SELECT * FROM public.forum WHERE LOWER(slug) = LOWER(?)";
+    final String insertForum = "INSERT INTO public.forum (description, slug, title, username) VALUES (?, ?, ?, ?)";
+
     @PostMapping(value = "/api/forum/create", produces = "application/json")
     public ResponseEntity forumCreate(@RequestBody Forum forum) {
         User user = null;
         try {
             user = this.jdbcTemplate.queryForObject(
-                    "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE nickname ILIKE ?",
+                    selectUsersByNickname,
                     new Object[]{forum.getUser()}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"user doesn't exist\"}");
@@ -48,7 +52,7 @@ public class ForumController {
         Forum forumExist = null;
         try {
             forumExist = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.forum WHERE slug ILIKE ?",
+                    selectFromForumBySlug,
                     new Object[]{forum.getSlug()}, new ForumMapper());
         } catch (EmptyResultDataAccessException e) {
             forumExist = null;
@@ -64,7 +68,7 @@ public class ForumController {
 
         try {
             this.jdbcTemplate.update(
-                    "INSERT INTO public.forum (description, slug, title, username) VALUES (?, ?, ?, ?)",
+                    insertForum,
                     forum.getDescription(), forum.getSlug(), forum.getTitle(), forum.getUser());
         } catch (DataAccessException e) {
             e.printStackTrace();
@@ -79,7 +83,7 @@ public class ForumController {
         Forum forum = null;
         try {
             forum = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.forum WHERE slug ILIKE ?",
+                    selectFromForumBySlug,
                     new Object[]{slug}, new ForumMapper());
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Can't find forum\"}");

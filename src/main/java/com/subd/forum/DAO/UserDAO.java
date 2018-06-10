@@ -19,12 +19,14 @@ public class UserDAO {
     public UserDAO(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+    final String selectUserByNickname = "SELECT * FROM public.users WHERE LOWER(nickname) = LOWER(?)";
+
 
     public User getByName(String name) {
         User user = null;
         try {
             user = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.users WHERE LOWER(nickname) = LOWER(?)",
+                    selectUserByNickname,
                     new Object[]{name}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;

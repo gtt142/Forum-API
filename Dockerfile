@@ -14,14 +14,11 @@ RUN apt-get install -y postgresql-$PGVER
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
 USER postgres
 
-COPY scheme.sql scheme.sql
-
 # Create a PostgreSQL role named ``tp_subd`` with ``subd`` as the password and
 # then create a database `forum_api` owned by the ``tp_subd`` role.
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER tp_subd WITH PASSWORD 'subd';" &&\
     createdb --owner=tp_subd forum_api &&\
-    psql -a -f scheme.sql &&\
     /etc/init.d/postgresql stop
 
 # Adjust PostgreSQL configuration so that remote connections to the

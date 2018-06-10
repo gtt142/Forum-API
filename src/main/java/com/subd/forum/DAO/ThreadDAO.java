@@ -13,9 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.FileOutputStream;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.Clock;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -30,27 +32,39 @@ import java.util.TimeZone;
 public class ThreadDAO {
     private final JdbcTemplate jdbcTemplate;
 
+    final String insertThread = "INSERT INTO public.thread (description, created, forum, message, slug, title, author)" +
+            " VALUES (?, COALESCE(?::TIMESTAMPTZ, CURRENT_TIMESTAMP), ?, ?, ?, ?, ?)" +
+            "RETURNING thread_id";
+    final String updateForumThreadCount = "UPDATE forum SET threads = threads + 1 WHERE LOWER(slug) = LOWER(?)";
+    final String selectThreadById = "SELECT * FROM public.thread WHERE thread_id = ?";
+    final String selectThreadBySlug = "SELECT * FROM public.thread WHERE LOWER(slug) = LOWER(?)";
+    final String updateThread = "UPDATE public.thread " +
+            "SET title = COALESCE(?, title), message = COALESCE(?, message) " +
+            "WHERE thread_id = ?";
+    final String checkSQL = "SELECT vote FROM votes WHERE user_id = ? AND thread_id = ?";
+    final String updVoice = "UPDATE votes SET vote = ? WHERE user_id = ? AND thread_id = ?";
+    final String updThreadVotes = "UPDATE thread SET votes = votes + ? WHERE thread_id = ?";
+    final String addVote = "INSERT INTO votes (user_id, thread_id, vote) VALUES (?, ?, ?)";
+
     @Autowired
     public ThreadDAO(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
     }
 
     public Thread add(Thread thread) {
+
         Thread newThread = null;
         int id;
         try {
             id = jdbcTemplate.queryForObject(
-                    "INSERT INTO public.thread (description, created, forum, message, slug, title, author)" +
-                            " VALUES (?, COALESCE(?::TIMESTAMPTZ, CURRENT_TIMESTAMP), ?, ?, ?, ?, ?)" +
-                            "RETURNING thread_id", Integer.class,
+                    insertThread, Integer.class,
                     thread.getDescription(), thread.getCreated(), thread.getForum(), thread.getMessage(),
                     thread.getSlug(), thread.getTitle(), thread.getAuthor());
         } catch (DataAccessException e) {
             e.printStackTrace();
             return null;
         }
-
-        String upd = "UPDATE forum SET threads = threads + 1 WHERE LOWER(slug) = LOWER(?)";
+        String upd = updateForumThreadCount;
         try {
             jdbcTemplate.update(upd, thread.getForum());
         } catch (DataAccessException e) {
@@ -59,15 +73,15 @@ public class ThreadDAO {
 
         try {
             newThread = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.thread WHERE thread_id = ?",
+                    selectThreadById,
                     new Object[]{id}, new ThreadMapper());
+
         } catch (EmptyResultDataAccessException e) {
             return null;
         } catch (DataAccessException e) {
             e.printStackTrace();
             return null;
         }
-
         return newThread;
     }
 
@@ -75,7 +89,7 @@ public class ThreadDAO {
         Thread thread = null;
         try {
             thread = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.thread WHERE thread_id = ?",
+                    selectThreadById,
                     new Object[]{id}, new ThreadMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;
@@ -89,7 +103,7 @@ public class ThreadDAO {
         Thread thread = null;
         try {
             thread = this.jdbcTemplate.queryForObject(
-                    "SELECT * FROM public.thread WHERE slug ILIKE ?",
+                    selectThreadBySlug,
                     new Object[]{slug}, new ThreadMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;
@@ -168,15 +182,9 @@ public class ThreadDAO {
     }
 
     public Thread updateById(Integer id, Thread updThread) {
-
-
-        StringBuilder sql = new StringBuilder()
-                .append("UPDATE public.thread " +
-                        "SET title = COALESCE(?, title), message = COALESCE(?, message) " +
-                        "WHERE thread_id = ?");
         if (updThread.getTitle() != null || updThread.getMessage() != null) {
             try {
-                jdbcTemplate.update(sql.toString(), updThread.getTitle(), updThread.getMessage(), id);
+                jdbcTemplate.update(updateThread, updThread.getTitle(), updThread.getMessage(), id);
             } catch (DataAccessException e) {
                 return null;
             }
@@ -199,33 +207,36 @@ public class ThreadDAO {
 
     public Thread vote(Thread thread, Integer userId, Vote vote) {
         try {
-            String checkSQL = "SELECT vote FROM votes WHERE user_id = ? AND thread_id = ?";
             Integer previous = jdbcTemplate.queryForObject(checkSQL, Integer.class, userId,
                     thread.getId());
 
             if (vote.getVoice().equals(previous)) {
                 return thread;
             }
-            String updVoice = "UPDATE votes SET vote = ? WHERE user_id = ? AND thread_id = ?";
             jdbcTemplate.update(updVoice, vote.getVoice(), userId, thread.getId());
 
-            String updThreadVotes = "UPDATE thread SET votes = votes + ? WHERE thread_id = ?";
             jdbcTemplate.update(updThreadVotes, vote.getVoice() * 2, thread.getId());
             thread.setVotes(vote.getVoice() * 2 + thread.getVotes());
 
         } catch(IncorrectResultSizeDataAccessException exception) {
-            String addVote = "INSERT INTO votes (user_id, thread_id, vote) VALUES (?, ?, ?)";
+
             jdbcTemplate.update(addVote, userId, thread.getId(), vote.getVoice());
 
-            String updThreadVotes = "UPDATE thread SET votes = votes + ? WHERE thread_id = ?";
             jdbcTemplate.update(updThreadVotes, vote.getVoice(), thread.getId());
+
             thread.setVotes(vote.getVoice() + thread.getVotes());
         }
         return thread;
     }
 
     public void clearTable() {
-        final String sql = "TRUNCATE TABLE thread CASCADE";
+        String sql = "TRUNCATE TABLE thread CASCADE";
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+        sql = "TRUNCATE TABLE votes CASCADE";
         try {
             jdbcTemplate.execute(sql);
         } catch (DataAccessException e) {

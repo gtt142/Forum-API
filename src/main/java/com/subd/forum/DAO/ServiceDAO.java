@@ -36,6 +36,7 @@ public class ServiceDAO {
         threadDAO.clearTable();
         postDAO.clearTable();
         userDAO.clearTable();
+
     }
 
 }
