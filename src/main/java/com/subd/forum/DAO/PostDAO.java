@@ -25,6 +25,8 @@ public class PostDAO {
     final String updateForum = "UPDATE forum SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)";
     final String nextId = "SELECT nextval('post_post_id_seq')";
     final String selectPosts = "SELECT * FROM public.post WHERE post_id = ?";
+    final String addNewVisitors = "INSERT INTO forum_users (nickname, forum) VALUES (?, ?) "
+            + "ON CONFLICT (nickname, forum) DO NOTHING";
 
     @Autowired
     public PostDAO(JdbcTemplate jdbcTemplate){
@@ -35,6 +37,7 @@ public class PostDAO {
         try(Connection con = jdbcTemplate.getDataSource().getConnection()) {
 //            con.setAutoCommit(false);
             PreparedStatement pst = con.prepareStatement(insertStr, Statement.NO_GENERATED_KEYS);
+            PreparedStatement pst2 = con.prepareStatement(addNewVisitors, Statement.NO_GENERATED_KEYS);
             Integer newId;
 
             for (Post post: posts) {
@@ -52,10 +55,16 @@ public class PostDAO {
                 pst.setInt(10, post.getId());
 
                 pst.addBatch();
+
+                pst2.setString(1, post.getAuthor());
+                pst2.setString(2, post.getForum());
+                pst2.addBatch();
             }
 
             pst.executeBatch();
             pst.close();
+            pst2.executeBatch();
+            pst2.close();
 
             if (posts.size() > 0) {
                 pst = con.prepareStatement(updateForum, Statement.NO_GENERATED_KEYS);

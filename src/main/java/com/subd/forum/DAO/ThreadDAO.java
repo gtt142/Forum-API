@@ -45,6 +45,8 @@ public class ThreadDAO {
     final String updVoice = "UPDATE votes SET vote = ? WHERE user_id = ? AND thread_id = ?";
     final String updThreadVotes = "UPDATE thread SET votes = votes + ? WHERE thread_id = ?";
     final String addVote = "INSERT INTO votes (user_id, thread_id, vote) VALUES (?, ?, ?)";
+    final String addNewVisitors = "INSERT INTO forum_users (nickname, forum) VALUES (?, ?) "
+            + "ON CONFLICT (nickname, forum) DO NOTHING";
 
     @Autowired
     public ThreadDAO(JdbcTemplate jdbcTemplate){
@@ -82,6 +84,13 @@ public class ThreadDAO {
             e.printStackTrace();
             return null;
         }
+
+        try {
+            jdbcTemplate.update(addNewVisitors, thread.getAuthor(), thread.getForum());
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+
         return newThread;
     }
 
