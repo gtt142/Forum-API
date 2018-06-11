@@ -62,7 +62,7 @@ CREATE TABLE public.forum_users (
 --     SELECT p.forum, p.author
 --     FROM post p
 --   );
-  
+
 CREATE INDEX users_lower_nickname_idx ON users(LOWER(nickname));
 CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
 CREATE INDEX users_nickname_idx ON users(nickname);

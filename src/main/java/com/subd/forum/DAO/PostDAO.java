@@ -63,8 +63,6 @@ public class PostDAO {
 
             pst.executeBatch();
             pst.close();
-            pst2.executeBatch();
-            pst2.close();
 
             if (posts.size() > 0) {
                 pst = con.prepareStatement(updateForum, Statement.NO_GENERATED_KEYS);
@@ -73,7 +71,9 @@ public class PostDAO {
                 pst.addBatch();
                 pst.executeBatch();
                 pst.close();
+                pst2.executeBatch();
             }
+            pst2.close();
 
 //            con.commit();
 //            con.setAutoCommit(true);
