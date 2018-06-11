@@ -72,8 +72,8 @@ public class PostDAO {
                 pst.executeBatch();
                 pst.close();
                 pst2.executeBatch();
+                pst2.close();
             }
-            pst2.close();
 
 //            con.commit();
 //            con.setAutoCommit(true);
