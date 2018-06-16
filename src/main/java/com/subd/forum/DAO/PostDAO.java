@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("Duplicates")
 @Service
 public class PostDAO {
     private final JdbcTemplate jdbcTemplate;
@@ -199,26 +200,68 @@ public class PostDAO {
         if (desc) sign = "< ";
         else sign = "> ";
 
+        StringBuilder historySqlBuilder = new StringBuilder()
+                .append("SELECT post_id FROM post WHERE thread = ? AND parent=0 ");
+
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM post WHERE ");
-        sqlBuilder.append("history[1] IN (SELECT post_id FROM post WHERE thread = ? AND parent=0 ");
+        sqlBuilder.append("history[1] = ? ");
 
         if (since != null) {
-            sqlBuilder.append(" AND history[1] ").append(sign).append("(SELECT history[1] FROM post WHERE post_id = ?) ");
+            final String sql = "SELECT history[1] FROM post WHERE post_id = ?";
+            final Integer sinceParentId = jdbcTemplate.queryForObject(sql, Integer.class, since);
+            historySqlBuilder.append(" AND post_id ").append(sign).append(sinceParentId.toString());
         }
-        sqlBuilder.append("ORDER BY post_id ");
-        if(desc) { sqlBuilder.append("DESC "); }
+        historySqlBuilder.append("ORDER BY post_id ");
+        if(desc) { historySqlBuilder.append("DESC "); }
 
         if (limit != null) {
-            sqlBuilder.append(" LIMIT ?");
+            historySqlBuilder.append(" LIMIT ?");
         }
-        sqlBuilder.append(") ");
+        historySqlBuilder.append(";");
 
 
         sqlBuilder.append("ORDER BY history[1] ");
         if(desc) { sqlBuilder.append("DESC "); }
         sqlBuilder.append(", history");
 
-        return  getPostsFromDB(sqlBuilder.toString(), threadId, limit, since, desc);
+        String historySql = historySqlBuilder.toString();
+        String sql = sqlBuilder.toString();
+
+        ArrayList<Post> posts = new ArrayList<>();
+        List<Map<String, Object>> historyRows;
+        try {
+            historyRows = jdbcTemplate.queryForList(historySql, threadId ,limit);
+            for (Map<String, Object> history: historyRows) {
+                Integer historyId = Integer.parseInt(history.get("post_id").toString());
+
+                List<Map<String, Object>> rows;
+                rows = jdbcTemplate.queryForList(sql, historyId);
+                for (Map<String, Object> row : rows) {
+                    String description = null;
+                    if (row.get("description") != null) {
+                        description = row.get("description").toString();
+                    }
+                    posts.add(new Post(
+                                    Integer.parseInt(row.get("post_id").toString()), Integer.parseInt(row.get("votes").toString()),
+                                    description,
+                                    Timestamp.valueOf(row.get("created").toString()).toInstant().atZone(ZoneId.systemDefault())
+                                            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                    row.get("message").toString(), row.get("forum").toString(),
+                                    row.get("author").toString(), Boolean.parseBoolean(row.get("isEdited").toString()),
+                                    Integer.parseInt(row.get("parent").toString()), Integer.parseInt(row.get("thread").toString())
+                            )
+                    );
+                }
+            }
+        }
+        catch (DataAccessException e){
+            e.printStackTrace();
+            return null;
+        }
+        return posts;
+
+
+//        return  getPostsFromDB(sqlBuilder.toString(), threadId, limit, null, desc);
 
     }
 

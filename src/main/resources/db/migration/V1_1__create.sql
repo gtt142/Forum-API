@@ -64,12 +64,17 @@ CREATE TABLE public.forum_users (
 --   );
 
 CREATE INDEX users_lower_nickname_idx ON users(LOWER(nickname));
-CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
 CREATE INDEX users_nickname_idx ON users(nickname);
+
+CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
+
 CREATE INDEX posts_user_id_idx ON post(author);
 CREATE INDEX posts_thread_id_id_idx ON post(thread, post_id);
+CREATE INDEX post__history1 ON post((history[1]));
+
 CREATE INDEX thread_thread_id ON thread (thread_id);
 CREATE INDEX thread_slug ON thread (LOWER(slug));
-CREATE INDEX users_nickname_lower_idx ON users(LOWER(nickname));
+CREATE INDEX thread__forum_created ON thread(LOWER(forum), created);
+
 CREATE INDEX view_forum_nickname_nick ON forum_users(LOWER(nickname));
 CREATE INDEX view_forum_nickname_forum ON forum_users(LOWER(forum));
