@@ -68,6 +68,7 @@ CREATE INDEX users_nickname_idx ON users(nickname);
 
 CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
 
+CREATE INDEX post__post_id ON post(post_id);
 CREATE INDEX posts_user_id_idx ON post(author);
 CREATE INDEX posts_thread_id_id_idx ON post(thread, post_id);
 CREATE INDEX post__history1 ON post((history[1]));

@@ -36,7 +36,7 @@ public class PostDAO {
 
     public List<Post> addPosts(List<Post> posts) {
         try(Connection con = jdbcTemplate.getDataSource().getConnection()) {
-//            con.setAutoCommit(false);
+            con.setAutoCommit(false);
             PreparedStatement pst = con.prepareStatement(insertStr, Statement.NO_GENERATED_KEYS);
             PreparedStatement pst2 = con.prepareStatement(addNewVisitors, Statement.NO_GENERATED_KEYS);
             Integer newId;
@@ -73,11 +73,11 @@ public class PostDAO {
                 pst.executeBatch();
                 pst.close();
                 pst2.executeBatch();
-                pst2.close();
             }
+            pst2.close();
 
-//            con.commit();
-//            con.setAutoCommit(true);
+            con.commit();
+            con.setAutoCommit(true);
             con.close();
         }
         catch (SQLException e){
