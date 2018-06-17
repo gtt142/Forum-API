@@ -110,9 +110,9 @@ public class UserDAO {
         builder.append("FROM users u JOIN forum_users fu ON (u.user_id = fu.user_id) ");
         builder.append(" WHERE fu.forum_id = ? ");
         if (since != null) {
-            builder.append(" AND LOWER(u.nickname COLLATE \"ucs_basic\") ").append(compare).append("LOWER('").append(String.valueOf(since)).append("' COLLATE \"ucs_basic\") ");
+            builder.append(" AND LOWER(u.nickname COLLATE \"C\") ").append(compare).append("LOWER('").append(String.valueOf(since)).append("' COLLATE \"C\") ");
         }
-        builder.append(" ORDER BY LOWER(u.nickname COLLATE \"ucs_basic\") ").append(order);
+        builder.append(" ORDER BY LOWER(u.nickname COLLATE \"C\") ").append(order);
         if (limit != null) {
             builder.append("LIMIT ").append(String.valueOf(limit));
         }
