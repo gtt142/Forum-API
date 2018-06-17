@@ -21,6 +21,18 @@ public class ForumDAO {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    public Integer getForumIdBySlug(String slug) {
+        Integer id = null;
+        try {
+            id = jdbcTemplate.queryForObject(selectForumIdBySlug, Integer.class, slug);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+        return id;
+    }
+
     public Boolean isExistBySlug(String slug) {
         try {
              this.jdbcTemplate.queryForObject(

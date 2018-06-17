@@ -14,6 +14,8 @@ public class Post {
     private Boolean isEdited;
     private Integer parent;
     private Integer thread;
+    private Integer authorId;
+
 
     public Post() {
     }
@@ -109,5 +111,13 @@ public class Post {
 
     public void setThread(Integer thread) {
         this.thread = thread;
+    }
+
+    public Integer getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(Integer authorId) {
+        this.authorId = authorId;
     }
 }

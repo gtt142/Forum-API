@@ -45,15 +45,19 @@ public class ThreadDAO {
     final String updVoice = "UPDATE votes SET vote = ? WHERE user_id = ? AND thread_id = ?";
     final String updThreadVotes = "UPDATE thread SET votes = votes + ? WHERE thread_id = ?";
     final String addVote = "INSERT INTO votes (user_id, thread_id, vote) VALUES (?, ?, ?)";
-    final String addNewVisitors = "INSERT INTO forum_users (nickname, forum) VALUES (?, ?) "
-            + "ON CONFLICT (nickname, forum) DO NOTHING";
+    final String addNewVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) "
+            + "ON CONFLICT (user_id, forum_id) DO NOTHING";
+
+    private final UserDAO userDAO;
+
 
     @Autowired
-    public ThreadDAO(JdbcTemplate jdbcTemplate){
+    public ThreadDAO(JdbcTemplate jdbcTemplate, UserDAO userDAO){
         this.jdbcTemplate = jdbcTemplate;
+        this.userDAO = userDAO;
     }
 
-    public Thread add(Thread thread) {
+    public Thread add(Thread thread, Integer forumId) {
 
         Thread newThread = null;
         int id;
@@ -85,8 +89,10 @@ public class ThreadDAO {
             return null;
         }
 
+        Integer authorId = userDAO.getUserIdByName(thread.getAuthor());
+
         try {
-            jdbcTemplate.update(addNewVisitors, thread.getAuthor(), thread.getForum());
+            jdbcTemplate.update(addNewVisitors, authorId, forumId);
         } catch (DataAccessException e) {
             e.printStackTrace();
         }

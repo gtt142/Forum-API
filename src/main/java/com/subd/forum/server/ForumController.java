@@ -21,15 +21,15 @@ import java.util.List;
 public class ForumController {
     private final JdbcTemplate jdbcTemplate;
     private final ForumDAO forumDAO;
-    private final ThreadDAO threadDAO;
     private final UserDAO userDAO;
+    private final ThreadDAO threadDAO;
 
 
-    public ForumController(JdbcTemplate jdbcTemplate) {
+    public ForumController(JdbcTemplate jdbcTemplate, ForumDAO forumDAO, ThreadDAO threadDAO, UserDAO userDAO) {
         this.jdbcTemplate = jdbcTemplate;
-        forumDAO = new ForumDAO(jdbcTemplate);
-        threadDAO = new ThreadDAO(jdbcTemplate);
-        userDAO = new UserDAO(jdbcTemplate);
+        this.forumDAO = forumDAO;
+        this.threadDAO = threadDAO;
+        this.userDAO = userDAO;
     }
 
     final String selectUsersByNickname = "SELECT user_id, nickname, fullname, email, about FROM public.\"users\" WHERE LOWER(nickname) = LOWER(?)";
@@ -120,13 +120,14 @@ public class ForumController {
                                    @RequestParam(name = "limit", required = false) Integer limit,
                                    @RequestParam(name = "since", required = false) String since,
                                    @RequestParam(name = "desc", required = false) Boolean desc) {
-        if(!forumDAO.isExistBySlug(slug)){
+        Integer forumId = forumDAO.getForumIdBySlug(slug);
+        if(forumId == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Can't find forum\"}");
         }
 
         if(desc == null){ desc = false; }
 
-        List<User> users = userDAO.getUsersByForum(slug, limit, since, desc);
+        List<User> users = userDAO.getUsersByForum(forumId, limit, since, desc);
 
         if(users == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Can't find users in forum\"}");

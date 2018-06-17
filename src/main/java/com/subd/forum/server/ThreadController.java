@@ -15,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.util.List;
 
@@ -29,11 +27,11 @@ public class ThreadController {
     private final PostDAO postDAO;
     final Clock clock = Clock.systemDefaultZone();
 
-    public ThreadController(JdbcTemplate jdbcTemplate) {
+    public ThreadController(JdbcTemplate jdbcTemplate, ThreadDAO threadDAO, UserDAO userDAO, PostDAO postDAO) {
         this.jdbcTemplate = jdbcTemplate;
-        threadDAO = new ThreadDAO(jdbcTemplate);
-        userDAO = new UserDAO(jdbcTemplate);
-        postDAO = new PostDAO(jdbcTemplate);
+        this.threadDAO = threadDAO;
+        this.userDAO = userDAO;
+        this.postDAO = postDAO;
     }
 
     @PostMapping(value = "/api/forum/{slug}/create", produces = "application/json")
@@ -81,7 +79,7 @@ public class ThreadController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(threadExist);
         }
 
-        Thread newThread = threadDAO.add(thread);
+        Thread newThread = threadDAO.add(thread, forumExist.getId());
         if(newThread == null){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\": \"can't create\"}");
         }

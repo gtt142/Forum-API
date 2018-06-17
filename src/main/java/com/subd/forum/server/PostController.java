@@ -58,6 +58,7 @@ public class PostController {
                 if (user == null) {
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"user unregistered\"}");
                 }
+                newPost.setAuthorId(user.getId());
             }
 
             if(newPost.getParent() == null) {
@@ -65,7 +66,7 @@ public class PostController {
             }
             if(newPost.getParent() != 0) {
 
-                Post parent = postDAO.getById(newPost.getParent());
+                Post parent = postDAO.getPostThreadById(newPost.getParent());
                 if (parent == null || !thread.getId().equals(parent.getThread())) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"message\": \"parent id is wrong\"}");
                 }
@@ -78,8 +79,10 @@ public class PostController {
             }
         }
 
+        Integer forumId = forumDAO.getForumIdBySlug(thread.getForum());
+
         List<Post> newPosts;
-        newPosts = postDAO.addPosts(posts);
+        newPosts = postDAO.addPosts(posts, forumId);
         if (newPosts == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"posts doesn't exist\"}");
         }

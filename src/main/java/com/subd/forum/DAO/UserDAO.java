@@ -7,6 +7,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.beans.IntrospectionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class UserDAO {
         this.jdbcTemplate = jdbcTemplate;
     }
     final String selectUserByNickname = "SELECT * FROM public.users WHERE LOWER(nickname) = LOWER(?)";
+    final String selectUserIdByNickname = "SELECT user_id FROM public.users WHERE LOWER(nickname) = LOWER(?)";
 //    final String refresh = "REFRESH MATERIALIZED VIEW forum_users";
 
 
@@ -35,6 +37,18 @@ public class UserDAO {
             e.printStackTrace();
         }
         return user;
+    }
+
+    public Integer getUserIdByName(String name) {
+        Integer id = null;
+        try {
+            id = jdbcTemplate.queryForObject(selectUserIdByNickname, Integer.class, name);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+        return id;
     }
 
     public Integer getRowsCount() {
@@ -71,14 +85,14 @@ public class UserDAO {
 
     }
 
-    public List<User> getUsersByForum(String slug, Integer limit, String since, Boolean desc) {
+    public List<User> getUsersByForum(Integer forumId, Integer limit, String since, Boolean desc) {
 
         String compare = (desc != null && desc ? "< " : "> ");
         String order = (desc != null && desc ? "DESC " : "ASC ");
 
         StringBuilder builder = new StringBuilder("SELECT * ");
-        builder.append("FROM users u JOIN forum_users fu ON (u.nickname = fu.nickname) ");
-        builder.append(" WHERE LOWER(fu.forum) = LOWER(?) ");
+        builder.append("FROM users u JOIN forum_users fu ON (u.user_id = fu.user_id) ");
+        builder.append(" WHERE fu.forum_id = ? ");
         if (since != null) {
             builder.append(" AND LOWER(u.nickname) COLLATE \"C\" ").append(compare).append("LOWER('").append(String.valueOf(since)).append("') COLLATE \"C\" ");
         }
@@ -98,7 +112,7 @@ public class UserDAO {
 //            } catch (DataAccessException e) {
 //                e.printStackTrace();
 //            }
-            rows = jdbcTemplate.queryForList(sql, slug);
+            rows = jdbcTemplate.queryForList(sql, forumId);
 
             for (Map<String, Object> row : rows) {
                 users.add(new User(

@@ -2,6 +2,7 @@ package com.subd.forum.DAO;
 
 import com.subd.forum.mappers.PostMapper;
 import com.subd.forum.models.Post;
+import com.subd.forum.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -26,15 +27,18 @@ public class PostDAO {
     final String updateForum = "UPDATE forum SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)";
     final String nextId = "SELECT nextval('post_post_id_seq')";
     final String selectPosts = "SELECT * FROM public.post WHERE post_id = ?";
-    final String addNewVisitors = "INSERT INTO forum_users (nickname, forum) VALUES (?, ?) "
-            + "ON CONFLICT (nickname, forum) DO NOTHING";
+    final String selectPostThread = "SELECT thread FROM public.post WHERE post_id = ?";
+    final String addNewVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) "
+            + "ON CONFLICT (user_id, forum_id) DO NOTHING";
+    final String historyIdByPostId = "SELECT history[1] FROM post WHERE post_id = ?";
 
     @Autowired
     public PostDAO(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Post> addPosts(List<Post> posts) {
+    public List<Post> addPosts(List<Post> posts, Integer forumId) {
+
         try(Connection con = jdbcTemplate.getDataSource().getConnection()) {
             con.setAutoCommit(false);
             PreparedStatement pst = con.prepareStatement(insertStr, Statement.NO_GENERATED_KEYS);
@@ -57,8 +61,8 @@ public class PostDAO {
 
                 pst.addBatch();
 
-                pst2.setString(1, post.getAuthor());
-                pst2.setString(2, post.getForum());
+                pst2.setInt(1, post.getAuthorId());
+                pst2.setInt(2, forumId);
                 pst2.addBatch();
             }
 
@@ -93,6 +97,20 @@ public class PostDAO {
             post = this.jdbcTemplate.queryForObject(
                     selectPosts,
                     new Object[]{id}, new PostMapper());
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+        return post;
+    }
+
+    public Post getPostThreadById(Integer id) {
+        Post post = null;
+        try {
+            final Integer thread = jdbcTemplate.queryForObject(selectPostThread, Integer.class, id);
+            post = new Post();
+            post.setThread(thread);
         } catch (EmptyResultDataAccessException e) {
             return null;
         } catch (DataAccessException e) {
@@ -207,8 +225,7 @@ public class PostDAO {
         sqlBuilder.append("history[1] = ? ");
 
         if (since != null) {
-            final String sql = "SELECT history[1] FROM post WHERE post_id = ?";
-            final Integer sinceParentId = jdbcTemplate.queryForObject(sql, Integer.class, since);
+            final Integer sinceParentId = jdbcTemplate.queryForObject(historyIdByPostId, Integer.class, since);
             historySqlBuilder.append(" AND post_id ").append(sign).append(sinceParentId.toString());
         }
         historySqlBuilder.append("ORDER BY post_id ");
@@ -275,7 +292,7 @@ public class PostDAO {
         if (since != null) {
             sqlBuilder.append(" AND history ").append(sign).append("(SELECT history FROM post WHERE post_id = ?) ");
         }
-        sqlBuilder.append("ORDER BY history ");
+        sqlBuilder.append(" ORDER BY history ");
         if(desc) { sqlBuilder.append("DESC "); }
 
         if (limit != null) {
