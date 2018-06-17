@@ -51,6 +51,7 @@ CREATE TABLE public.votes (
 CREATE TABLE public.forum_users (
   user_id INTEGER,
   forum_id INTEGER,
+  nickname VARCHAR(50),
   UNIQUE (user_id, forum_id)
 );
 
@@ -67,6 +68,7 @@ CREATE INDEX users_lower_nickname_idx ON users(LOWER(nickname));
 CREATE INDEX users_nickname_idx ON users(nickname);
 
 CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
+CREATE INDEX forum_lower_slug_forum_id ON forum(LOWER(slug), forum_id);
 
 CREATE INDEX post__post_id ON post(post_id);
 CREATE INDEX posts_user_id_idx ON post(author);

@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.beans.IntrospectionException;
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class UserDAO {
     }
     final String selectUserByNickname = "SELECT * FROM public.users WHERE LOWER(nickname) = LOWER(?)";
     final String selectUserIdByNickname = "SELECT user_id FROM public.users WHERE LOWER(nickname) = LOWER(?)";
+    final String selectUserById = "SELECT * FROM users WHERE user_id = ?";
 //    final String refresh = "REFRESH MATERIALIZED VIEW forum_users";
 
 
@@ -31,6 +33,20 @@ public class UserDAO {
             user = this.jdbcTemplate.queryForObject(
                     selectUserByNickname,
                     new Object[]{name}, new UserMapper());
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            e.printStackTrace();
+        }
+        return user;
+    }
+
+    public User getUserById(Integer id) {
+        User user = null;
+        try {
+            user = this.jdbcTemplate.queryForObject(
+                    selectUserById,
+                    new Object[]{id}, new UserMapper());
         } catch (EmptyResultDataAccessException e) {
             return null;
         } catch (DataAccessException e) {
@@ -94,9 +110,9 @@ public class UserDAO {
         builder.append("FROM users u JOIN forum_users fu ON (u.user_id = fu.user_id) ");
         builder.append(" WHERE fu.forum_id = ? ");
         if (since != null) {
-            builder.append(" AND LOWER(u.nickname) COLLATE \"C\" ").append(compare).append("LOWER('").append(String.valueOf(since)).append("') COLLATE \"C\" ");
+            builder.append(" AND LOWER(u.nickname COLLATE \"ucs_basic\") ").append(compare).append("LOWER('").append(String.valueOf(since)).append("' COLLATE \"ucs_basic\") ");
         }
-        builder.append(" ORDER BY LOWER(u.nickname) COLLATE \"C\" ").append(order);
+        builder.append(" ORDER BY LOWER(u.nickname COLLATE \"ucs_basic\") ").append(order);
         if (limit != null) {
             builder.append("LIMIT ").append(String.valueOf(limit));
         }

@@ -28,7 +28,7 @@ public class PostDAO {
     final String nextId = "SELECT nextval('post_post_id_seq')";
     final String selectPosts = "SELECT * FROM public.post WHERE post_id = ?";
     final String selectPostThread = "SELECT thread FROM public.post WHERE post_id = ?";
-    final String addNewVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) "
+    final String addNewVisitors = "INSERT INTO forum_users (user_id, forum_id, nickname) VALUES (?, ?, ?) "
             + "ON CONFLICT (user_id, forum_id) DO NOTHING";
     final String historyIdByPostId = "SELECT history[1] FROM post WHERE post_id = ?";
 
@@ -63,6 +63,7 @@ public class PostDAO {
 
                 pst2.setInt(1, post.getAuthorId());
                 pst2.setInt(2, forumId);
+                pst2.setString(3, post.getAuthor());
                 pst2.addBatch();
             }
 
