@@ -65,10 +65,11 @@ CREATE TABLE public.forum_users (
 --   );
 
 CREATE INDEX users_lower_nickname_idx ON users(LOWER(nickname));
-CREATE INDEX users_lower_nickname_collate_idx ON users(LOWER(nickname) COLLATE "C", user_id);
+CREATE INDEX users_lower_nickname_collate_idx ON users(LOWER(nickname COLLATE "C"), user_id);
 CREATE INDEX users_nickname_idx ON users(nickname);
 CREATE INDEX users__user_id ON users(user_id);
-CREATE INDEX users__user_id_hash ON users USING HASH (user_id);
+CREATE INDEX users__user_id_nick ON users(user_id, LOWER(nickname COLLATE "C"));
+-- CREATE INDEX users__user_id_hash ON users USING HASH (user_id);
 
 
 CREATE INDEX forum_lower_slug_idx ON forum(LOWER(slug));
@@ -84,6 +85,7 @@ CREATE INDEX thread_slug ON thread (LOWER(slug));
 CREATE INDEX thread__forum_created ON thread(LOWER(forum), created);
 
 CREATE INDEX view_forum_nickname_nick ON forum_users(user_id);
-CREATE INDEX view_forum_nickname_nick_hash ON forum_users USING HASH (user_id);
+-- CREATE INDEX view_forum_nickname_nick_hash ON forum_users USING HASH (user_id);
 CREATE INDEX view_forum_nickname_forum ON forum_users(forum_id);
+CREATE INDEX view_forum_nickname_forumid_nick ON forum_users(forum_id, nickname);
 CREATE INDEX view_forum_nickname_forumid_userid ON forum_users(forum_id, user_id);

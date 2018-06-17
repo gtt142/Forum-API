@@ -107,8 +107,10 @@ public class UserDAO {
         String order = (desc != null && desc ? "DESC " : "ASC ");
 
         StringBuilder builder = new StringBuilder("SELECT * ");
-        builder.append("FROM users u JOIN forum_users fu ON (u.user_id = fu.user_id) ");
-        builder.append(" WHERE fu.forum_id = ? ");
+        builder.append("FROM users u WHERE u.nickname IN (");
+        builder.append("SELECT nickname FROM forum_users WHERE forum_users.forum_id = ? ) ");
+                // JOIN forum_users fu ON (u.user_id = fu.user_id AND fu.forum_id = ?) ");
+//        builder.append(" WHERE fu.forum_id = ? ");
         if (since != null) {
             builder.append(" AND LOWER(u.nickname COLLATE \"C\") ").append(compare).append("LOWER('").append(String.valueOf(since)).append("' COLLATE \"C\") ");
         }
